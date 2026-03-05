@@ -89,7 +89,7 @@ export default function AboutPage() {
                     <strong className="text-stone-800">Demo công khai:</strong>{" "}
                     Trang demo tại{" "}
                     <code className="bg-white border border-stone-200 px-1 py-0.5 rounded text-[13px] text-amber-700">
-                      giapha-os.homielab.com
+                      giaphahonguyenquynhtho.com
                     </code>{" "}
                     sử dụng dữ liệu mẫu hư cấu, không chứa thông tin của người
                     thật. Không nên nhập thông tin cá nhân thật vào trang demo.
@@ -111,10 +111,10 @@ export default function AboutPage() {
                 dụng phần mềm, hoặc muốn thảo luận thì xin vui lòng gửi email về
                 địa chỉ:{` `}
                 <a
-                  href="mailto:contact@homielab.com"
+                  href="mailto:hongphuong83na@gmail.com"
                   className="font-semibold text-amber-700 hover:text-amber-600 transition-colors inline-flex items-center gap-1.5 mt-2"
                 >
-                  contact@homielab.com
+                  hongphuong83na@gmail.com.com
                 </a>
               </p>
             </div>
