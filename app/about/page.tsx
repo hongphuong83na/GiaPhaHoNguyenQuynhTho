@@ -9,12 +9,9 @@ export default function AboutPage() {
     <div className="min-h-screen flex flex-col bg-[#fafaf9] selection:bg-amber-200 selection:text-amber-900 relative">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none"></div>
 
-      <Link
-        href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-stone-500 hover:text-stone-900 font-semibold text-sm transition-all duration-300 group bg-white/60 px-5 py-2.5 rounded-full backdrop-blur-md shadow-sm border border-stone-200 hover:border-stone-300 hover:shadow-md z-20"
-      >
+      <Link href="/dashboard" className="btn absolute top-6 left-6 z-20">
         <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
-        Trang chủ
+        Quay lại
       </Link>
 
       <div className="flex-1 flex flex-col justify-center items-center px-4 py-20 relative z-10 w-full mb-10">
@@ -28,9 +25,7 @@ export default function AboutPage() {
               <div className="p-3 bg-amber-100/50 text-amber-700 rounded-2xl">
                 <Info className="size-6" />
               </div>
-              <h1 className="text-3xl font-serif font-bold text-stone-900">
-                Giới thiệu dự án
-              </h1>
+              <h1 className="title">Giới thiệu dự án</h1>
             </div>
 
             <div className="max-w-none">
@@ -89,7 +84,7 @@ export default function AboutPage() {
                     <strong className="text-stone-800">Demo công khai:</strong>{" "}
                     Trang demo tại{" "}
                     <code className="bg-white border border-stone-200 px-1 py-0.5 rounded text-[13px] text-amber-700">
-                      giaphahonguyenquynhtho.com
+                      giapha-os.homielab.com
                     </code>{" "}
                     sử dụng dữ liệu mẫu hư cấu, không chứa thông tin của người
                     thật. Không nên nhập thông tin cá nhân thật vào trang demo.
@@ -111,10 +106,10 @@ export default function AboutPage() {
                 dụng phần mềm, hoặc muốn thảo luận thì xin vui lòng gửi email về
                 địa chỉ:{` `}
                 <a
-                  href="mailto:hongphuong83na@gmail.com"
+                  href="mailto:giaphaos@homielab.com"
                   className="font-semibold text-amber-700 hover:text-amber-600 transition-colors inline-flex items-center gap-1.5 mt-2"
                 >
-                  hongphuong83na@gmail.com.com
+                  giaphaos@homielab.com
                 </a>
               </p>
             </div>
