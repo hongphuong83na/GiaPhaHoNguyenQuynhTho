@@ -6,14 +6,30 @@ Dự án ra đời từ nhu cầu thực tế: cần một hệ thống Cloud đ
 
 Phù hợp với người Việt Nam.
 
+## Mục lục
+
+- [Các tính năng chính](#các-tính-năng-chính)
+- [Demo](#demo)
+- [Hình ảnh Giao diện](#hình-ảnh-giao-diện)
+- [Cài đặt và Chạy dự án](#cài-đặt-và-chạy-dự-án)
+  - [Cách 1: Deploy nhanh lên Vercel](#cách-1-deploy-nhanh-lên-vercel)
+  - [Cách 2: Chạy trên máy cá nhân](#cách-2-chạy-trên-máy-cá-nhân)
+- [Tài khoản đầu tiên](#tài-khoản-đầu-tiên)
+- [Xử lý lỗi khi đăng ký](#xử-lý-lỗi-khi-đăng-ký)
+- [Phân quyền người dùng (User Roles)](#phân-quyền-người-dùng-user-roles)
+- [Đóng góp (Contributing)](#đóng-góp-contributing)
+- [Tuyên bố từ chối trách nhiệm & Quyền riêng tư](#tuyên-bố-từ-chối-trách-nhiệm--quyền-riêng-tư)
+- [Giấy phép (License)](#giấy-phép-license)
+
 ## Các tính năng chính
 
 - **Sơ đồ trực quan**: Xem gia phả dạng Cây (Tree) và Sơ đồ tư duy (Mindmap).
 - **Tìm danh xưng**: Tự động xác định cách gọi tên (Bác, Chú, Cô, Dì...) chính xác.
 - **Quản lý thành viên**: Lưu trữ thông tin, avatar và sắp xếp thứ tự nhánh dòng họ.
+- **Quản lý quan hệ**: Quản lý các mối quan hệ trong gia phả (hỗ trợ các trường hợp đặc biệt như đa thê, đa phu,...).
 - **Thống kê & Sự kiện**: Theo dõi ngày giỗ và các chỉ số nhân khẩu học của dòng họ.
-- **Sao lưu dữ liệu**: Xuất/nhập file JSON để lưu trữ hoặc di chuyển dễ dàng.
-- **Bảo mật**: Phân quyền Admin và bảo vệ dữ liệu bằng Supabase.
+- **Sao lưu dữ liệu**: Xuất/nhập file JSON, CSV, GEDCOM để lưu trữ hoặc di chuyển dễ dàng.
+- **Bảo mật**: Phân quyền (Admin, Editor, Member) và bảo vệ dữ liệu bằng Supabase.
 - **Đa thiết bị**: Giao diện hiện đại, tối ưu cho cả máy tính và điện thoại.
 
 ## Demo
@@ -23,6 +39,8 @@ Phù hợp với người Việt Nam.
 - Mật khẩu: `giaphaos`
 
 ## Hình ảnh Giao diện
+
+![Dashboard](docs/screenshots/dashboard.png)
 
 ![Danh sách](docs/screenshots/list.png)
 
@@ -35,6 +53,8 @@ Phù hợp với người Việt Nam.
 ![Mindmap](docs/screenshots/kinship.png)
 
 ![Mindmap](docs/screenshots/events.png)
+
+More screenshots: [docs/screenshots/](docs/screenshots/)
 
 ## Cài đặt và Chạy dự án
 
@@ -102,6 +122,36 @@ Mở trình duyệt và truy cập: `http://localhost:3000`
 - Đăng ký tài khoản mới khi vào web lần đầu.
 - Người đăng ký đầu tiên sẽ tự động có quyền **admin**.
 - Các tài khoản đăng ký sau sẽ mặc định là **member**.
+
+## Xử lý lỗi khi đăng ký
+
+Sau khi cài đặt xong, nếu bạn gặp lỗi `Failed to fetch` khi đăng ký:
+
+**Nguyên nhân:** Supabase chặn các request từ domain chưa được thêm vào danh sách cho phép.
+
+**Cách khắc phục:**
+
+1. Vào [Supabase Dashboard](https://supabase.com/dashboard) → chọn Project của bạn.
+2. Vào **Authentication → URL Configuration**.
+3. Ở mục **Site URL**, điền URL chính của ứng dụng, ví dụ:
+   - Vercel: `https://giapha-os.vercel.app`
+   - Máy cá nhân: `http://localhost:3000`
+4. Ở mục **Redirect URLs**, nhấn **Add URL** và thêm:
+   - `https://giapha-os.vercel.app/**`
+   - `http://localhost:3000/**` (nếu chạy local)
+5. Nhấn **Save** và thử lại.
+
+> **Lưu ý:** Thay `giapha-os.vercel.app` bằng domain thực tế của bạn. Nếu dùng domain tùy chỉnh, hãy thêm cả domain đó vào danh sách.
+
+---
+
+## Phân quyền người dùng (User Roles)
+
+Hệ thống có 3 cấp độ phân quyền để dễ dàng quản lý ai được phép cập nhật gia phả:
+
+1. **Admin (Quản trị viên):** Có toàn quyền đối với hệ thống.
+2. **Editor (Biên soạn):** Cho phép thêm, sửa, xóa thông tin hồ sơ và các mối quan hệ.
+3. **Member (Thành viên):** Chỉ có thể xem sơ đồ gia phả và các thống kê trực quan.
 
 ## Đóng góp (Contributing)
 
