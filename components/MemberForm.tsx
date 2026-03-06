@@ -42,6 +42,7 @@ export default function MemberForm({
 
   // Form states
   const [fullName, setFullName] = useState(initialData?.full_name || "");
+  const [otherNames, setOtherNames] = useState(initialData?.other_names || "");
   const [gender, setGender] = useState<Gender>(initialData?.gender || "male");
   const [birthYear, setBirthYear] = useState<number | "">(
     initialData?.birth_year || "",
@@ -72,6 +73,9 @@ export default function MemberForm({
 
   const [birthOrder, setBirthOrder] = useState<number | "">(
     initialData?.birth_order || "",
+  );
+  const [generation, setGeneration] = useState<number | "">(
+    initialData?.generation || "",
   );
 
   const [avatarUrl, setAvatarUrl] = useState(initialData?.avatar_url || "");
@@ -173,6 +177,8 @@ export default function MemberForm({
         is_deceased: isDeceased,
         is_in_law: isInLaw,
         birth_order: birthOrder === "" ? null : Number(birthOrder),
+        generation: generation === "" ? null : Number(generation),
+        other_names: otherNames || null,
         avatar_url: finalAvatarUrl || null,
         note: note || null,
       };
@@ -246,14 +252,14 @@ export default function MemberForm({
         variants={formSectionVariants}
         initial="hidden"
         animate="show"
-        className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl shadow-sm border border-stone-200/80"
+        className="bg-white/80 p-5 sm:p-8 rounded-2xl shadow-sm border border-stone-200/80"
       >
         <h3 className="text-lg sm:text-xl font-serif font-bold text-stone-800 mb-6 border-b border-stone-100 pb-4 flex items-center gap-2">
           <User className="size-5 text-amber-600" />
           Thông tin chung
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <label className="block text-sm font-semibold text-stone-700 mb-1.5">
               Họ và Tên <span className="text-red-500">*</span>
             </label>
@@ -264,6 +270,19 @@ export default function MemberForm({
               onChange={(e) => setFullName(e.target.value)}
               className={inputClasses}
               placeholder="Nhập họ và tên..."
+            />
+          </div>
+
+          <div className="md:col-span-1">
+            <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+              Tên gọi khác
+            </label>
+            <input
+              type="text"
+              value={otherNames}
+              onChange={(e) => setOtherNames(e.target.value)}
+              className={inputClasses}
+              placeholder="Nickname, tên thánh, bí danh..."
             />
           </div>
 
@@ -338,7 +357,26 @@ export default function MemberForm({
               className={inputClasses}
             />
             <p className="mt-1.5 text-xs text-stone-400 flex items-center gap-1">
-              <span>💡</span> Để trống nếu không rõ hoặc không có anh/chị/em
+              <span>💡</span> Để trống nếu không rõ
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+              Thuộc đời thứ
+            </label>
+            <input
+              type="number"
+              min="1"
+              placeholder="Ví dụ: 1, 2, 3..."
+              value={generation}
+              onChange={(e) =>
+                setGeneration(e.target.value ? Number(e.target.value) : "")
+              }
+              className={inputClasses}
+            />
+            <p className="mt-1.5 text-xs text-stone-400 flex items-center gap-1">
+              <span>💡</span> Để trống nếu không rõ
             </p>
           </div>
 
@@ -600,7 +638,7 @@ export default function MemberForm({
           initial="hidden"
           animate="show"
           transition={{ delay: 0.1 }}
-          className="bg-linear-to-br from-amber-50/80 to-stone-50/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl border border-amber-200/50 shadow-sm relative overflow-hidden"
+          className="bg-linear-to-br from-amber-50/80 to-stone-50/80 p-5 sm:p-8 rounded-2xl border border-amber-200/50 shadow-sm relative overflow-hidden"
         >
           {/* Decorative Background Icon */}
           <Lock className="absolute -right-6 -bottom-6 w-32 h-32 text-amber-500/5 rotate-12" />

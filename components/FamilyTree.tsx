@@ -1,30 +1,47 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { usePanZoom } from "@/hooks/usePanZoom";
 import { Person, Relationship } from "@/types";
+import { useDashboard } from "./DashboardContext";
 import FamilyNodeCard from "./FamilyNodeCard";
+import TreeToolbar from "./TreeToolbar";
 
-interface SpouseData {
-  person: Person;
-  note?: string | null;
-}
+import { buildAdjacencyLists, getFilteredTreeData } from "@/utils/treeHelpers";
 
 export default function FamilyTree({
   personsMap,
   relationships,
   roots,
+  canEdit,
 }: {
   personsMap: Map<string, Person>;
   relationships: Relationship[];
   roots: Person[];
+  canEdit?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isPressed, setIsPressed] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const hasDraggedRef = useRef(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
+  const [hideSpouses, setHideSpouses] = useState(false);
+  const [hideMales, setHideMales] = useState(false);
+  const [hideFemales, setHideFemales] = useState(false);
+
+  const { showAvatar } = useDashboard();
+
+  const {
+    scale,
+    isPressed,
+    isDragging,
+    handlers: {
+      handleMouseDown,
+      handleMouseMove,
+      handleMouseUpOrLeave,
+      handleClickCapture,
+      handleZoomIn,
+      handleZoomOut,
+      handleResetZoom,
+    },
+  } = usePanZoom(containerRef);
 
   useEffect(() => {
     // Center the scroll area horizontally on initial render
@@ -34,104 +51,82 @@ export default function FamilyTree({
     }
   }, [roots]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsPressed(true);
-    hasDraggedRef.current = false;
-    setDragStart({ x: e.pageX, y: e.pageY });
-    if (containerRef.current) {
-      setScrollStart({
-        left: containerRef.current.scrollLeft,
-        top: containerRef.current.scrollTop,
+  useEffect(() => {
+    const equalizeHeights = () => {
+      if (!containerRef.current) return;
+      const nodes = containerRef.current.querySelectorAll(".node-container");
+      const levelMap: Record<string, HTMLElement[]> = {};
+
+      nodes.forEach((node) => {
+        const level = node.getAttribute("data-level");
+        if (level != null) {
+          if (!levelMap[level]) levelMap[level] = [];
+          levelMap[level].push(node as HTMLElement);
+        }
       });
-    }
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isPressed || !containerRef.current) return;
+      Object.values(levelMap).forEach((levelNodes) => {
+        // Reset min-height first to get natural height
+        levelNodes.forEach((node) => {
+          const innerFlex = node.firstElementChild as HTMLElement;
+          if (innerFlex) innerFlex.style.minHeight = "0px";
+        });
 
-    // Only start dragging if moved a bit to allow simple clicks
-    const dx = e.pageX - dragStart.x;
-    const dy = e.pageY - dragStart.y;
+        let maxHeight = 0;
+        // Find the maximum height in this level
+        levelNodes.forEach((node) => {
+          const innerFlex = node.firstElementChild as HTMLElement;
+          if (innerFlex) {
+            maxHeight = Math.max(maxHeight, innerFlex.offsetHeight);
+          }
+        });
 
-    if (!hasDraggedRef.current && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-      setIsDragging(true);
-      hasDraggedRef.current = true;
-    }
-
-    if (hasDraggedRef.current) {
-      e.preventDefault();
-      containerRef.current.scrollLeft = scrollStart.left - dx;
-      containerRef.current.scrollTop = scrollStart.top - dy;
-    }
-  };
-
-  const handleMouseUpOrLeave = () => {
-    setIsPressed(false);
-    setIsDragging(false);
-  };
-
-  const handleClickCapture = (e: React.MouseEvent) => {
-    // Intercept clicks if we were dragging, prevent links from opening
-    if (hasDraggedRef.current) {
-      e.stopPropagation();
-      e.preventDefault();
-      hasDraggedRef.current = false;
-    }
-  };
-
-  // Helper function to resolve tree connections for a person
-  const getTreeData = (personId: string) => {
-    const spousesList: SpouseData[] = relationships
-      .filter(
-        (r) =>
-          r.type === "marriage" &&
-          (r.person_a === personId || r.person_b === personId),
-      )
-      .map((r) => {
-        const spouseId = r.person_a === personId ? r.person_b : r.person_a;
-        return {
-          person: personsMap.get(spouseId)!,
-          note: r.note,
-        };
-      })
-      .filter((s) => s.person);
-
-    const childRels = relationships.filter(
-      (r) =>
-        (r.type === "biological_child" || r.type === "adopted_child") &&
-        r.person_a === personId,
-    );
-
-    const childrenList = (
-      childRels
-        .map((r) => personsMap.get(r.person_b))
-        .filter(Boolean) as Person[]
-    ).sort((a, b) => {
-      // 1. birth_order ascending (null → pushed to end)
-      const aOrder = a.birth_order ?? Infinity;
-      const bOrder = b.birth_order ?? Infinity;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      // 2. birth_year ascending (null → pushed to end)
-      const aYear = a.birth_year ?? Infinity;
-      const bYear = b.birth_year ?? Infinity;
-      return aYear - bYear;
-    });
-
-    // If there is only one spouse, or NO spouse, we can just lump all children together.
-    // Standard family trees often combine all children under the main node
-    // for simplicity of drawing, especially when dealing with CSS-based trees.
-    return {
-      person: personsMap.get(personId)!,
-      spouses: spousesList,
-      children: childrenList,
+        // Apply max height to all nodes in this level
+        levelNodes.forEach((node) => {
+          const innerFlex = node.firstElementChild as HTMLElement;
+          if (innerFlex && maxHeight > 0) {
+            innerFlex.style.minHeight = `${maxHeight}px`;
+          }
+        });
+      });
     };
-  };
+
+    const timeoutId = setTimeout(equalizeHeights, 50);
+    window.addEventListener("resize", equalizeHeights);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", equalizeHeights);
+    };
+  }, [
+    roots,
+    personsMap,
+    relationships,
+    showAvatar,
+    scale,
+    hideSpouses,
+    hideMales,
+    hideFemales,
+  ]);
+
+  const adj = useMemo(
+    () => buildAdjacencyLists(relationships, personsMap),
+    [relationships, personsMap],
+  );
+
+  const getTreeData = (personId: string) =>
+    getFilteredTreeData(personId, personsMap, adj, {
+      hideSpouses,
+      hideMales,
+      hideFemales,
+    });
 
   // Recursive function for rendering nodes
   // Tracks visited IDs to prevent infinite loops from circular relationships
   const renderTreeNode = (
     personId: string,
     visited: Set<string> = new Set(),
+    level: number = 0,
   ): React.ReactNode => {
     if (visited.has(personId)) return null; // cycle guard
     visited.add(personId);
@@ -141,31 +136,29 @@ export default function FamilyTree({
 
     return (
       <li>
-        <div className="node-container inline-flex flex-col items-center">
+        <div
+          className="node-container inline-flex flex-col items-center"
+          data-level={level}
+        >
           {/* Main Person & Spouses Row */}
-          <div className="flex relative z-10 bg-white rounded-2xl shadow-md border border-stone-200/80 transition-opacity">
-            <FamilyNodeCard person={data.person} isMainNode={true} />
+          <div
+            className={`flex relative z-10 items-stretch h-full${showAvatar ? " bg-white rounded-2xl shadow-md border border-stone-200/80 transition-opacity" : ""}`}
+          >
+            <FamilyNodeCard person={data.person} level={level} />
 
-            {data.spouses.length > 0 && (
-              <>
-                {/* <div className="mt-6 size-5 sm:w-6 sm:h-6 rounded-full shadow-sm bg-white border border-stone-200 z-20 flex items-center justify-center text-[10px] sm:text-xs">
-                  💍
-                </div> */}
-                {data.spouses.map((spouseData, idx) => (
-                  <div key={spouseData.person.id} className="flex relative">
-                    <FamilyNodeCard
-                      isRingVisible={idx === 0}
-                      isPlusVisible={idx > 0}
-                      person={spouseData.person}
-                      role={
-                        spouseData.person.gender === "male" ? "Chồng" : "Vợ"
-                      }
-                      note={spouseData.note}
-                    />
-                  </div>
-                ))}
-              </>
-            )}
+            {data.spouses.length > 0 &&
+              data.spouses.map((spouseData, idx) => (
+                <div key={spouseData.person.id} className="flex relative">
+                  <FamilyNodeCard
+                    isRingVisible={idx === 0}
+                    isPlusVisible={idx > 0}
+                    person={spouseData.person}
+                    role={spouseData.person.gender === "male" ? "Chồng" : "Vợ"}
+                    note={spouseData.note}
+                    level={level}
+                  />
+                </div>
+              ))}
           </div>
         </div>
 
@@ -174,7 +167,7 @@ export default function FamilyTree({
           <ul>
             {data.children.map((child) => (
               <React.Fragment key={child.id}>
-                {renderTreeNode(child.id, new Set(visited))}
+                {renderTreeNode(child.id, new Set(visited), level + 1)}
               </React.Fragment>
             ))}
           </ul>
@@ -191,26 +184,42 @@ export default function FamilyTree({
     );
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-full overflow-auto bg-stone-50 ${isPressed ? "cursor-grabbing" : "cursor-grab"}`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUpOrLeave}
-      onMouseLeave={handleMouseUpOrLeave}
-      onClickCapture={handleClickCapture}
-      onDragStart={(e) => e.preventDefault()} // Prevent browser default dragging of links/images
-    >
-      {/* We use a style block to inject the CSS logic for the family tree lines */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
+    <div className="w-full h-full relative">
+      <TreeToolbar
+        scale={scale}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleResetZoom={handleResetZoom}
+        hideSpouses={hideSpouses}
+        setHideSpouses={setHideSpouses}
+        hideMales={hideMales}
+        setHideMales={setHideMales}
+        hideFemales={hideFemales}
+        setHideFemales={setHideFemales}
+        canEdit={canEdit}
+      />
+
+      <div
+        ref={containerRef}
+        className={`w-full h-full overflow-auto bg-stone-50 ${isPressed ? "cursor-grabbing" : "cursor-grab"}`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        onClickCapture={handleClickCapture}
+        onDragStart={(e) => e.preventDefault()} // Prevent browser default dragging of links/images
+      >
+        {/* We use a style block to inject the CSS logic for the family tree lines */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
         .css-tree ul {
           padding-top: 30px; 
           position: relative;
           display: flex;
           justify-content: center;
           padding-left: 0;
+          user-select: none;
         }
 
         .css-tree li {
@@ -276,25 +285,30 @@ export default function FamilyTree({
           width: 0; height: 30px;
         }
       `,
-        }}
-      />
+          }}
+        />
 
-      {/* 
+        {/* 
         Use w-max to prevent wrapping and allow scrolling. 
         mx-auto centers it if smaller than screen. 
         p-8 adds padding inside scroll area.
       */}
-      <div
-        id="export-container"
-        className={`w-max min-w-full mx-auto p-4 css-tree transition-opacity duration-200 ${isDragging ? "opacity-90" : ""}`}
-      >
-        <ul>
-          {roots.map((root) => (
-            <React.Fragment key={root.id}>
-              {renderTreeNode(root.id)}
-            </React.Fragment>
-          ))}
-        </ul>
+        <div
+          id="export-container"
+          className={`w-max min-w-full mx-auto p-4 css-tree transition-all duration-200 ${isDragging ? "opacity-90" : ""}`}
+          style={{
+            transform: `scale(${scale})`,
+            transformOrigin: "top center",
+          }}
+        >
+          <ul>
+            {roots.map((root) => (
+              <React.Fragment key={root.id}>
+                {renderTreeNode(root.id)}
+              </React.Fragment>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

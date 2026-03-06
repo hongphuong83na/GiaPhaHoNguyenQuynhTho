@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import DefaultAvatar from "./DefaultAvatar";
 import { FemaleIcon, MaleIcon } from "./GenderIcons";
@@ -81,7 +82,7 @@ function PersonSelector({
   );
 
   return (
-    <div className="flex-1 min-w-0 relative">
+    <div className="w-full flex-1 min-w-0 relative">
       <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">
         {label}
       </p>
@@ -153,7 +154,7 @@ function PersonSelector({
                 <input
                   autoFocus
                   placeholder="Tìm tên..."
-                  className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-stone-200 focus:outline-none focus:border-amber-400"
+                  className="w-full pl-9 pr-4 py-2 text-base sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:border-amber-400"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -231,7 +232,7 @@ function PersonSelector({
 // ── Kinship reference table data ──────────────────────────────────────────────
 const KINSHIP_TERMS = [
   {
-    relation: "Cha / Mẹ",
+    relation: "Bố / Mẹ",
     desc: "1 bậc trên (dòng trực hệ)",
     example: "Bố, ba, má...",
   },
@@ -253,11 +254,11 @@ const KINSHIP_TERMS = [
   {
     relation: "Anh / Chị / Em họ",
     desc: "Cùng thế hệ, khác nhánh",
-    example: "Dựa vào thứ bậc của nhánh cha/mẹ",
+    example: "Dựa vào thứ bậc của nhánh bố/mẹ",
   },
   {
     relation: "Bác / Chú / Cô",
-    desc: "Anh/chị/em của cha (Bên Nội)",
+    desc: "Anh/chị/em của bố (Bên Nội)",
     example: "Bác (anh), Chú (em trai), Cô (chị em gái)",
   },
   {
@@ -274,9 +275,34 @@ const KINSHIP_TERMS = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function KinshipFinder({ persons, relationships }: Props) {
-  const [personA, setPersonA] = useState<PersonNode | null>(null);
-  const [personB, setPersonB] = useState<PersonNode | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const p1Id = searchParams.get("p1");
+  const p2Id = searchParams.get("p2");
+
+  const personA = useMemo(
+    () => persons.find((p) => p.id === p1Id) || null,
+    [persons, p1Id],
+  );
+  const personB = useMemo(
+    () => persons.find((p) => p.id === p2Id) || null,
+    [persons, p2Id],
+  );
+
   const [showGuide, setShowGuide] = useState(false);
+
+  const updateUrl = (p1Id: string | null, p2Id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (p1Id) params.set("p1", p1Id);
+    else params.delete("p1");
+    if (p2Id) params.set("p2", p2Id);
+    else params.delete("p2");
+
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
+  };
 
   const result = useMemo(() => {
     if (!personA || !personB) return null;
@@ -284,33 +310,32 @@ export default function KinshipFinder({ persons, relationships }: Props) {
   }, [personA, personB, persons, relationships]);
 
   const swap = () => {
-    setPersonA(personB);
-    setPersonB(personA);
+    updateUrl(p2Id, p1Id);
   };
 
   return (
     <div className="space-y-6">
       {/* ── Selector row ── */}
-      <div className="bg-white/80 backdrop-blur-md border border-stone-200/60 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-end gap-3">
+      <div className="bg-white/80 border border-stone-200/60 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-3 sm:gap-4">
           <PersonSelector
             label="Thành viên A"
             selected={personA}
-            onSelect={setPersonA}
+            onSelect={(p) => updateUrl(p.id, p2Id)}
             persons={persons}
             disabledId={personB?.id}
           />
           <button
             onClick={swap}
             title="Đổi chỗ"
-            className="size-10 shrink-0 mb-0.5 flex items-center justify-center rounded-xl bg-stone-100 hover:bg-amber-100 hover:text-amber-600 text-stone-500 transition-all border border-stone-200"
+            className="size-10 shrink-0 sm:mb-0.5 flex items-center justify-center rounded-xl bg-stone-100 hover:bg-amber-100 hover:text-amber-600 text-stone-500 transition-all border border-stone-200"
           >
-            <ArrowLeftRight className="size-4" />
+            <ArrowLeftRight className="size-4 rotate-90 sm:rotate-0" />
           </button>
           <PersonSelector
             label="Thành viên B"
             selected={personB}
-            onSelect={setPersonB}
+            onSelect={(p) => updateUrl(p1Id, p.id)}
             persons={persons}
             disabledId={personA?.id}
           />
@@ -490,7 +515,7 @@ export default function KinshipFinder({ persons, relationships }: Props) {
                   <ul className="space-y-1.5 text-sm text-amber-800">
                     <li className="flex gap-2">
                       <span className="text-amber-400 shrink-0">•</span>
-                      Nhập đầy đủ quan hệ <strong>Cha/Mẹ - Con</strong> và{" "}
+                      Nhập đầy đủ quan hệ <strong>Bố/Mẹ - Con</strong> và{" "}
                       <strong>Kết hôn</strong>.
                     </li>
                     <li className="flex gap-2">
